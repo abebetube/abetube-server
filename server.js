@@ -1,46 +1,14 @@
 const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
-const cors = require('cors');
+const path = require('path');
 
 const app = express();
-app.use(cors());
+const port = process.env.PORT || 3000;
 
-app.get('/search', async (req, res) => {
-  const query = req.query.q;
-  
-  if (!query) {
-    return res.status(400).json({ error: "Missing search query" });
-  }
-
-  const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-
-  try {
-    const response = await axios.get(youtubeSearchUrl);
-
-    // מגרדים את ה-HTML
-    const $ = cheerio.load(response.data);
-    const videoList = [];
-
-    // בודקים את כל הסרטונים בעמוד
-    $('ytd-video-renderer').each((index, element) => {
-      const title = $(element).find('#video-title').text();
-      const videoId = $(element).find('#video-title').attr('href').split('=')[1];
-      const thumbnail = $(element).find('#img').attr('src');
-      
-      videoList.push({
-        id: videoId,
-        title: title,
-        thumbnail: thumbnail
-      });
-    });
-
-    res.json(videoList);
-  } catch (error) {
-    console.error("Error scraping YouTube:", error);
-    res.status(500).json({ error: "Error scraping YouTube" });
-  }
+// שליחת abetube.html כשמבקשים את דף הבית
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'abetube.html'));
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(port, () => {
+  console.log(`השרת פועל על פורט ${port}`);
+});
