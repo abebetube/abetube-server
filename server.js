@@ -1,40 +1,46 @@
 const express = require('express');
 const axios = require('axios');
+const cheerio = require('cheerio');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
-const API_KEY = 'YOUR_YOUTUBE_API_KEY'; // תכניס את המפתח שלך
-
 app.use(cors());
 
 app.get('/search', async (req, res) => {
   const query = req.query.q;
-  if (!query) return res.status(400).send('Missing query');
+  
+  if (!query) {
+    return res.status(400).json({ error: "Missing search query" });
+  }
+
+  const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 
   try {
-    const ytRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-      params: {
-        key: API_KEY,
-        part: 'snippet',
-        type: 'video',
-        q: query,
-        maxResults: 5,
-      }
+    const response = await axios.get(youtubeSearchUrl);
+
+    // מגרדים את ה-HTML
+    const $ = cheerio.load(response.data);
+    const videoList = [];
+
+    // בודקים את כל הסרטונים בעמוד
+    $('ytd-video-renderer').each((index, element) => {
+      const title = $(element).find('#video-title').text();
+      const videoId = $(element).find('#video-title').attr('href').split('=')[1];
+      const thumbnail = $(element).find('#img').attr('src');
+      
+      videoList.push({
+        id: videoId,
+        title: title,
+        thumbnail: thumbnail
+      });
     });
 
-    const results = ytRes.data.items.map(item => ({
-      videoId: item.id.videoId,
-      title: item.snippet.title,
-      thumbnail: item.snippet.thumbnails.medium.url,
-    }));
-
-    res.json(results);
-  } catch (err) {
-    res.status(500).send('YouTube API error');
+    res.json(videoList);
+  } catch (error) {
+    console.error("Error scraping YouTube:", error);
+    res.status(500).json({ error: "Error scraping YouTube" });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
