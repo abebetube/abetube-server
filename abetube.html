@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <title>AbeTube</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      text-align: center;
+    }
+    #results img {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <h1>AbeTube – יוטיוב בלי פרסומות</h1>
+  <input type="text" id="search" placeholder="חפש סרטון ביוטיוב" />
+  <button onclick="search()">חפש</button>
+  <div id="results"></div>
+
+  <script>
+    async function search() {
+      const query = document.getElementById("search").value;
+      const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      if (Array.isArray(data)) {
+        data.forEach(video => {
+          const link = document.createElement("a");
+          link.href = `https://www.youtube.com/watch?v=${video.videoId}`;
+          link.target = "_blank";
+          link.innerHTML = `<img src="${video.thumbnail}" alt="${video.title}" /><br>${video.title}<br><br>`;
+          resultsDiv.appendChild(link);
+        });
+      } else {
+        resultsDiv.innerHTML = "לא נמצאו תוצאות או שהתרחשה שגיאה.";
+      }
+    }
+  </script>
+</body>
+</html>
