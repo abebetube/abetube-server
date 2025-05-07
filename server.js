@@ -1,5 +1,4 @@
 const express = require('express');
-const fetch = require('node-fetch');
 const axios = require('axios');
 const cors = require("cors");
 
@@ -43,7 +42,8 @@ app.get("/search", async (req, res) => {
   }
 });
 
-// האזנה על כל הכתובת והמחשב
+// הפעלת השרת
 const PORT = process.env.PORT || 3000;
-app.listen(PORT console.log(`Scraper server running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
