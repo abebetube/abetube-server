@@ -4,7 +4,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // הגדרת התיקייה "public" לשירות קבצים סטטיים
-app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(express.static(path.join(__dirname, "public")));
+
 
 // הפניית ברירת מחדל לקובץ abetube.html
 app.get('/', (req, res) => {
