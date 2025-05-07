@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AbeTube - חיפוש סרטונים</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212;
+      color: #fff;
+    }
+
+    header {
+      background-color: #1e1e1e;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      font-size: 1.8em;
+      margin: 0;
+      color: crimson;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 2px solid crimson;
+    }
+
+    .search-bar {
+      margin: 20px auto;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-bar input {
+      width: 280px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #555;
+      background-color: #1e1e1e;
+      color: #fff;
+    }
+
+    .search-bar button {
+      padding: 12px 20px;
+      background-color: crimson;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+
+    .search-bar button:hover {
+      background-color: #e60023;
+    }
+
+    .player {
+      margin: 20px auto;
+      width: 100%;
+      max-width: 1000px;
+      aspect-ratio: 16 / 9;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .player iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .results {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .result-item {
+      background-color: #1f1f1f;
+      padding: 10px;
+      border-radius: 12px;
+      width: 200px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    .result-item:hover {
+      transform: scale(1.05);
+    }
+
+    .result-item img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .result-item h4 {
+      font-size: 15px;
+      margin: 10px 0 0;
+      color: #ddd;
+    }
+
+    @media (max-width: 600px) {
+      .search-bar input {
+        width: 90%;
+      }
+
+      .result-item {
+        width: 90%;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>AbeTube</h1>
+    <img src="logo.png" alt="AbeTube Logo" class="logo">
+  </header>
+
+  <main>
+    <div class="search-bar">
+      <label for="searchInput">חפש סרטונים:</label>
+      <input type="text" id="searchInput" name="searchQuery" placeholder="חפש סרטונים..."/>
+      <button id="searchButton">חפש</button>
+    </div>
+
+    <div id="player" class="player"></div>
+    <div id="results" class="results"></div>
+  </main>
+
+  <script>
+    document.getElementById("searchButton").addEventListener("click", searchVideos);
+
+    document.getElementById("searchInput").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        searchVideos();
+      }
+    });
+
+    function searchVideos() {
+      const query = document.getElementById("searchInput").value.trim();
+      const resultsDiv = document.getElementById("results");
+      const playerDiv = document.getElementById("player");
+
+      resultsDiv.innerHTML = "";
+      playerDiv.innerHTML = "";
+
+      if (!query) return;
+
+      fetch(`https://abetube-server1.vercel.app/search?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data || data.videos.length === 0) {
+            resultsDiv.innerHTML = "<p>לא נמצאו תוצאות.</p>";
+            return;
+          }
+
+          data.videos.forEach(item => {
+            const videoId = item.videoId;
+            const title = item.title;
+            const thumbnail = item.thumbnail;
+
+            const videoItem = document.createElement("div");
+            videoItem.className = "result-item";
+            videoItem.innerHTML = `
+              <img src="${thumbnail}" alt="${title}" />
+              <h4>${title}</h4>
+            `;
+            videoItem.onclick = () => loadVideo(videoId);
+            resultsDiv.appendChild(videoItem);
+          });
+        })
+        .catch(err => {
+          console.error("שגיאה:", err);
+          resultsDiv.innerHTML = "<p>שגיאה בחיפוש.</p>";
+        });
+    }
+
+    function loadVideo(videoId) {
+      const playerDiv = document.getElementById("player");
+      playerDiv.innerHTML = `  
+        <iframe 
+          src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1" 
+          allow="autoplay; encrypted-media" 
+          allowfullscreen>
+        </iframe>
+      `;
+      localStorage.setItem("lastWatchedVideoId", videoId);
+      playerDiv.scrollIntoView({ behavior: "smooth" });
+    }
+
+    window.addEventListener("load", () => {
+      const lastVideo = localStorage.getItem("lastWatchedVideoId");
+      if (lastVideo) {
+        loadVideo(lastVideo);
+      }
+    });
+  </script>
+
+</body>
+</html>
