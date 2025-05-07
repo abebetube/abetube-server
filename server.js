@@ -1,49 +1,40 @@
 const express = require('express');
 const axios = require('axios');
-const cors = require("cors");
+const cors = require('cors');
 
 const app = express();
+const PORT = 3000;
+const API_KEY = 'YOUR_YOUTUBE_API_KEY'; // תכניס את המפתח שלך
+
 app.use(cors());
 
-// מסלול החיפוש
-app.get("/search", async (req, res) => {
+app.get('/search', async (req, res) => {
   const query = req.query.q;
-  if (!query) return res.status(400).send({ error: "Missing query" });
+  if (!query) return res.status(400).send('Missing query');
 
   try {
-    const response = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
-    const html = response.data;
-    const jsonMatch = html.match(/var ytInitialData = (.*?);<\/script>/);
-
-    if (!jsonMatch || jsonMatch.length < 2) {
-      return res.status(500).send({ error: "ytInitialData not found" });
-    }
-
-    const json = JSON.parse(jsonMatch[1]);
-    const videos = [];
-    const contents = json.contents.twoColumnSearchResultsRenderer.primaryContents.sectionListRenderer.contents;
-    const items = contents[0].itemSectionRenderer.contents;
-
-    for (const item of items) {
-      const video = item.videoRenderer;
-      if (video) {
-        videos.push({
-          videoId: video.videoId,
-          title: video.title.runs[0].text,
-          thumbnail: video.thumbnail.thumbnails.pop().url
-        });
+    const ytRes = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+      params: {
+        key: API_KEY,
+        part: 'snippet',
+        type: 'video',
+        q: query,
+        maxResults: 5,
       }
-    }
+    });
 
-    res.send({ videos });
-  } catch (error) {
-    console.error("Scraping error:", error.message);
-    res.status(500).send({ error: "Failed to fetch or parse YouTube data" });
+    const results = ytRes.data.items.map(item => ({
+      videoId: item.id.videoId,
+      title: item.snippet.title,
+      thumbnail: item.snippet.thumbnails.medium.url,
+    }));
+
+    res.json(results);
+  } catch (err) {
+    res.status(500).send('YouTube API error');
   }
 });
 
-// הפעלת השרת
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
