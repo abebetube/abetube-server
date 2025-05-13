@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // הפניית ברירת מחדל לקובץ abetube.html
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'abetube.html'));
 });
 
 app.listen(port, () => {
