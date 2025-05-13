@@ -1,46 +1,285 @@
 <!DOCTYPE html>
-<html lang="he">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AbeTube</title>
+  <link rel="icon" type="image/png" href="logo.png" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      direction: rtl;
-      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
     }
-    #results img {
-      width: 200px;
+	
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ישים את הלוגו מצד אחד ואת הכותרת מצד שני */
+  background-color: #959595;
+  padding: 10px 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+header img {
+  height: 40px; /* שמירה על גובה הלוגו */
+}
+
+header h1 {
+  margin: 0;
+  font-size: 24px;
+  flex-grow: 1; /* יגרום לכותרת להימתח כך שתהיה בצד אחד */
+  text-align: right; /* מ align את הכותרת לימין */
+}
+
+    .search-bar {
+      text-align: center;
+      margin: 20px;
+    }
+    .search-bar input {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .search-bar button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-left: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+    .results-title {
+      text-align: center;
+      font-size: 24px;
+      margin-top: 20px;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      padding: 0 20px;
+    }
+    .video-card {
+      cursor: pointer;
+      border-radius: 10px;
+      overflow: hidden;
+      background-color: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .video-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .video-card h3 {
+      text-align: center;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      margin: 0;
+    }
+    #player {
+      width: 100%;
+      height: 400px;
+      background-color: #000;
+      margin-top: 20px;
+    }
+    .pagination {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .spinner {
+      border: 16px solid #f3f3f3;
+      border-top: 16px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    #error {
+      color: red;
+      text-align: center;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h1>AbeTube – יוטיוב בלי פרסומות</h1>
-  <input type="text" id="search" placeholder="חפש סרטון ביוטיוב" />
-  <button onclick="search()">חפש</button>
-  <div id="results"></div>
+  <header>
+    <h1>AbeTube</h1>
+    <img src="logo.png" alt="AbeTube Logo">
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="חפש סרטונים ביוטיוב..." onkeydown="checkEnter(event)" />
+    <button onclick="searchVideos()">חפש</button>
+  </div>
+<div id="loading" style="display: none;">מחפש תוצאות...</div>
+
+    <div class="spinner"></div>
+  </div>
+
+  <div id="error">אין חיבור לאינטרנט. בדוק ונסה שוב.</div>
+
+  <div id="player"></div>
+
+  <h2 class="results-title" id="resultsTitle" style="display: none;">סרטונים נוספים</h2>
+
+  <div class="results" id="results"></div>
+
+  <div class="pagination" id="pagination" style="text-align:center; margin-bottom: 30px; display:none;">
+    <button onclick="loadPrevPage()">⬅ הקודם</button>
+    <button onclick="loadNextPage()">הבא ➡</button>
+  </div>
 
   <script>
-    async function search() {
-      const query = document.getElementById("search").value;
-      const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
+    const API_KEY = "AIzaSyCKWg2Po9gpQTx2-SSadDOouTB04jBFAAU";
+    let currentItems = [];
+    let nextPageToken = '';
+    let prevPageToken = '';
+    let currentQuery = '';
+    let currentVideoId;
+    let videoIndex = 0;
+    let player;
 
-      const resultsDiv = document.getElementById("results");
-      resultsDiv.innerHTML = "";
+    // להטעין את YouTube API
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '390',
+        width: '640',
+        videoId: '',
+        events: {
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
 
-      if (Array.isArray(data)) {
-        data.forEach(video => {
-          const link = document.createElement("a");
-          link.href = `https://www.youtube.com/watch?v=${video.videoId}`;
-          link.target = "_blank";
-          link.innerHTML = `<img src="${video.thumbnail}" alt="${video.title}" /><br>${video.title}<br><br>`;
-          resultsDiv.appendChild(link);
-        });
-      } else {
-        resultsDiv.innerHTML = "לא נמצאו תוצאות או שהתרחשה שגיאה.";
+    // שינוי במצב הנגן
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.ENDED) {
+        playNextVideo();
       }
     }
+
+    // חיפוש סרטונים ביוטיוב
+    function searchVideos(pageToken = '') {
+      if (!navigator.onLine) {
+        document.getElementById('error').style.display = 'block';
+        return;
+      }
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('loader').style.display = 'block';
+
+      const query = document.getElementById('searchInput').value;
+      if (!query.trim()) return;
+      currentQuery = query;
+
+      // שמירת חיפוש במטמון
+      localStorage.setItem('lastSearchQuery', query);
+
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&q=${encodeURIComponent(query)}&type=video&key=${API_KEY}&pageToken=${pageToken}`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          nextPageToken = data.nextPageToken || '';
+          prevPageToken = data.prevPageToken || '';
+          document.getElementById('pagination').style.display = (nextPageToken || prevPageToken) ? 'flex' : 'none';
+          currentItems = data.items;
+          renderResults(currentItems);
+          document.getElementById('loader').style.display = 'none';
+          // שמירה של התוצאות במטמון
+          localStorage.setItem('lastSearchResults', JSON.stringify(data.items));
+        })
+        .catch(err => {
+          document.getElementById('error').style.display = 'block';
+          document.getElementById('loader').style.display = 'none';
+          console.error(err);
+        });
+    }
+
+    // הצגת תוצאות החיפוש
+    function renderResults(results) {
+      const resultsContainer = document.getElementById('results');
+      resultsContainer.innerHTML = '';
+      document.getElementById('resultsTitle').style.display = results.length > 0 ? 'block' : 'none';
+
+      results.forEach((result, index) => {
+        const card = document.createElement('div');
+        card.classList.add('video-card');
+        card.onclick = () => playVideo(result.id.videoId, index);
+        card.innerHTML = `
+          <img src="${result.snippet.thumbnails.medium.url}" alt="${result.snippet.title}">
+          <h3 class="video-title">${result.snippet.title}</h3>
+        `;
+        resultsContainer.appendChild(card);
+      });
+
+      // ניקוי הנגן אם יש תוצאות אבל לא רוצים לנגן מיד
+      document.getElementById('player').innerHTML = '';
+    }
+
+    // טעינת תוצאות חיפוש מהמטמון בעת טעינת הדף
+	// טעינת תוצאות חיפוש מהמטמון בעת טעינת הדף
+function loadFromCache() {
+  const cachedResults = JSON.parse(localStorage.getItem('lastSearchResults'));
+  if (cachedResults) {
+    renderResults(cachedResults);
+  }
+
+  // לא טוענים את query לשורת החיפוש
+  document.getElementById('searchInput').value = '';
+}
+
+
+    // ניגון סרטון
+    function playVideo(videoId, index) {
+      currentVideoId = videoId;
+      videoIndex = index;
+
+      // יצירת נגן חדש עם הסרטון הנבחר
+      player.loadVideoById(videoId);
+      
+      // מעבר לעמוד הסרטון הנוכחי
+      window.scrollTo({ top: document.getElementById('player').offsetTop, behavior: 'smooth' });
+    }
+
+    // ניגון הסרטון הבא
+    function playNextVideo() {
+      videoIndex++;
+      if (videoIndex < currentItems.length) {
+        playVideo(currentItems[videoIndex].id.videoId, videoIndex);
+      }
+    }
+
+    function loadNextPage() {
+      if (!nextPageToken) return;
+      searchVideos(nextPageToken);
+    }
+
+    function loadPrevPage() {
+      if (!prevPageToken) return;
+      searchVideos(prevPageToken);
+    }
+
+    function checkEnter(event) {
+      if (event.key === "Enter") {
+        searchVideos();
+      }
+    }
+
+    // טעינת נתונים מהמטמון עם טעינת הדף
+    window.onload = loadFromCache;
   </script>
+
+  <!-- טעינת ה-API של YouTube -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
