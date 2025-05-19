@@ -1,22 +1,27 @@
 from flask import Flask, request, jsonify
-
-from flask_cors import CORS  # ייבוא CORS
+from flask_cors import CORS
 import os
 import requests
 
+app = Flask(__name__)
+CORS(app)
+
 PIPED_API = "https://piped.nosebs.ru/api/v1"
-query = "music"
-res = requests.get(f"{PIPED_API}/search", params={"q": query, "filter": "videos"})
 
-print("Status code:", res.status_code)
-print("Content-Type:", res.headers.get("Content-Type"))
-
-try:
-    print(res.json())  # זה ייכשל אם חוזר HTML
-except Exception as e:
-    print("שגיאה בפירוש JSON:", e)
-    print("Response text (קיצור):", res.text[:500])
-
+@app.route("/search")
+def search():
+    query = request.args.get("q", "")
+    if not query:
+        return jsonify({"error": "Missing query"}), 400
+    try:
+        res = requests.get(f"{PIPED_API}/search", params={"q": query, "filter": "videos"})
+        print("Search status:", res.status_code)
+        if res.status_code != 200:
+            return jsonify({"error": "Failed to fetch search results"}), res.status_code
+        return res.json()
+    except Exception as e:
+        print("Search Error:", e)
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/video")
 def video():
@@ -50,4 +55,5 @@ def suggestions():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
+    print(f"Running server on port {port}")
     app.run(host="0.0.0.0", port=port)
