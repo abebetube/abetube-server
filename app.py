@@ -5,12 +5,7 @@ import os
 
 app = Flask(__name__)
 CORS(app)  # מאפשר בקשות מכל המקורות - אפשר להגביל לפי דומיין במידת הצורך
-
-PIPED_API = "https://piped.nosebs.ru"
-
-@app.route("/")
-def home():
-    return jsonify({"message": "AbeTube backend is running ✅"}), 200
+PIPED_BASE = "https://piped.nosebs.ru"
 
 @app.route("/search")
 def search():
@@ -18,9 +13,9 @@ def search():
     if not query:
         return jsonify({"error": "Missing query parameter"}), 400
     try:
-        res = requests.get(f"{PIPED_API}/search", params={"q": query, "filter": "videos"})
+        res = requests.get(f"{PIPED_BASE}/search", params={"q": query, "filter": "videos"})
         print("Status:", res.status_code)
-        print("Response text:", res.text)  # מדפיס את התשובה המלאה
+        print("Response text:", res.text)
         if res.status_code != 200:
             return jsonify({
                 "error": "Failed to fetch from Piped",
