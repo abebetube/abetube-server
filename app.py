@@ -3,7 +3,7 @@ import requests
 import json
 
 app = Flask(__name__)
-PIPED_API = "https://pipedapi.kavin.rocks"
+PIPED_API = "https://pipedapi.tokhmi.xyz"
 
 @app.route("/")
 def home():
