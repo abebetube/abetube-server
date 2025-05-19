@@ -1,22 +1,33 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)
 
+@app.route('/')
+def home():
+    return "Hello from Flask on Render!"
+
 @app.route('/search', methods=['GET'])
 def search():
-    query = request.args.get('q')  # מקבל פרמטר בשם q מכתובת URL
-    # תוכל לעבד את הנתון query כאן
+    query = request.args.get('q')
+    if not query:
+        return jsonify({"error": "No query provided"}), 400
     return jsonify({"result": f"You searched for {query}"})
+
 @app.route('/calculate', methods=['POST'])
 def calculate():
-    data = request.json  # מקבל JSON מהבקשה
-    # עיבוד הנתונים
-    value = data.get('value', 0)
-    result = value * 2  # לדוגמה
+    data = request.json
+    if not data or 'value' not in data:
+        return jsonify({"error": "No value provided"}), 400
+    value = data['value']
+    try:
+        result = value * 2
+    except TypeError:
+        return jsonify({"error": "Value must be a number"}), 400
     return jsonify({"result": result})
 
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
