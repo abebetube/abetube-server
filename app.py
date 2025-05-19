@@ -18,7 +18,7 @@ def search():
     if not query:
         return jsonify({"error": "Missing query parameter"}), 400
     try:
-        res = requests.get(f"{PIPED_API}/search", params={"query": query, "filter": "videos"})
+        res = requests.get(f"{PIPED_API}/search", params={"q": query, "filter": "videos"})
         print("Status:", res.status_code)
         print("Response text:", res.text)  # מדפיס את התשובה המלאה
         if res.status_code != 200:
