@@ -2,19 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 
-
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 4000 
-
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
-
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
-
 app = Flask(__name__)
 CORS(app)
 
