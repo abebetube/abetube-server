@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify
 import requests
-import json
+from flask_cors import CORS  # ייבוא CORS
+import os
 
 app = Flask(__name__)
+CORS(app)  # מאפשר בקשות מכל המקורות - אפשר להגביל לפי דומיין במידת הצורך
+
 PIPED_API = "https://pipedapi.tokhmi.xyz"
 
 @app.route("/")
@@ -58,8 +61,6 @@ def suggestions():
     except Exception as e:
         print("Suggestions Error:", e)
         return jsonify({"error": str(e)}), 500
-
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
