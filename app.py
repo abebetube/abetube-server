@@ -16,9 +16,14 @@ def search():
         return jsonify({"error": "Missing query parameter"}), 400
     try:
         res = requests.get(f"{PIPED_API}/search", params={"query": query, "filter": "videos"})
-        print("Search status:", res.status_code)
+        print("Status:", res.status_code)
+        print("Response text:", res.text)  # מדפיס את התשובה המלאה
         if res.status_code != 200:
-            return jsonify({"error": "Failed to fetch from Piped"}), res.status_code
+            return jsonify({
+                "error": "Failed to fetch from Piped",
+                "status": res.status_code,
+                "details": res.text
+            }), res.status_code
         return res.json()
     except Exception as e:
         print("Search Error:", e)
