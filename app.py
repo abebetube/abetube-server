@@ -19,6 +19,7 @@ def search():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/video")
 def video():
     video_id = request.args.get("id", "")
