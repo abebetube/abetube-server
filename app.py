@@ -1,31 +1,22 @@
 from flask import Flask, request, jsonify
-import requests
+
 from flask_cors import CORS  # ייבוא CORS
 import os
+import requests
 
-app = Flask(__name__)
-CORS(app)  # מאפשר בקשות מכל המקורות - אפשר להגביל לפי דומיין במידת הצורך
-PIPED_BASE = "https://piped.nosebs.ru"
+PIPED_API = "https://piped.nosebs.ru/api/v1"
+query = "music"
+res = requests.get(f"{PIPED_API}/search", params={"q": query, "filter": "videos"})
 
-@app.route("/search")
-def search():
-    query = request.args.get("q", "")
-    if not query:
-        return jsonify({"error": "Missing query parameter"}), 400
-    try:
-        res = requests.get(f"{PIPED_BASE}/search", params={"q": query, "filter": "videos"})
-        print("Status:", res.status_code)
-        print("Response text:", res.text)
-        if res.status_code != 200:
-            return jsonify({
-                "error": "Failed to fetch from Piped",
-                "status": res.status_code,
-                "details": res.text
-            }), res.status_code
-        return res.json()
-    except Exception as e:
-        print("Search Error:", e)
-        return jsonify({"error": str(e)}), 500
+print("Status code:", res.status_code)
+print("Content-Type:", res.headers.get("Content-Type"))
+
+try:
+    print(res.json())  # זה ייכשל אם חוזר HTML
+except Exception as e:
+    print("שגיאה בפירוש JSON:", e)
+    print("Response text (קיצור):", res.text[:500])
+
 
 @app.route("/video")
 def video():
