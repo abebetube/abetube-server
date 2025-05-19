@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 CORS(app)  # מאפשר בקשות מכל המקורות - אפשר להגביל לפי דומיין במידת הצורך
 
-PIPED_API = "https://piped.nosebs.ru/trending"
+PIPED_API = "https://piped.nosebs.ru"
 
 @app.route("/")
 def home():
