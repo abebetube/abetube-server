@@ -1,33 +1,69 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import os
+from flask import Flask, request, jsonify, render_template_string
+import subprocess
 
 app = Flask(__name__)
-CORS(app)
+
+HTML_PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Video Search</title>
+</head>
+<body>
+    <h1>Video Search</h1>
+    <form id="searchForm">
+        <input type="text" id="query" placeholder="Enter search term" />
+        <button type="submit">Search</button>
+    </form>
+    <div id="result"></div>
+<script>
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var q = document.getElementById('query').value;
+    fetch('/search?q=' + encodeURIComponent(q))
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('result').innerText = 'Error: ' + data.error;
+            } else {
+                // צור אלמנט וידאו להצגת הסטרים
+                var video = document.createElement('video');
+                video.src = data.url;
+                video.controls = true;
+                video.width = 320;
+                video.height = 240;
+                document.getElementById('result').innerHTML = '';
+                document.getElementById('result').appendChild(video);
+            }
+        });
+});
+</script>
+</body>
+</html>
+"""
 
 @app.route('/')
-def home():
-    return "Hello from Flask on Render!"
+def index():
+    return render_template_string(HTML_PAGE)
 
-@app.route('/search', methods=['GET'])
+@app.route('/search')
 def search():
-    query = request.args.get('q')
+    query = request.args.get('q', '')
     if not query:
-        return jsonify({"error": "No query provided"}), 400
-    return jsonify({"result": f"You searched for {query}"})
+        return jsonify({"error": "No search query provided"}), 400
 
-@app.route('/calculate', methods=['POST'])
-def calculate():
-    data = request.json
-    if not data or 'value' not in data:
-        return jsonify({"error": "No value provided"}), 400
-    value = data['value']
     try:
-        result = value * 2
-    except TypeError:
-        return jsonify({"error": "Value must be a number"}), 400
-    return jsonify({"result": result})
+        # הפעלת yt-dlp לקבלת כתובת סטרים מהתוצאה הראשונה לחיפוש
+        command = ["yt-dlp", "--get-url", f"ytsearch1:{query}"]
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
+        if result.returncode != 0:
+            return jsonify({"error": "Error running yt-dlp: " + result.stderr}), 500
+        video_url = result.stdout.strip().split('\n')[0]
+        return jsonify({"url": video_url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    # הפעלת השרת על כל הכתובות המקומיות ב-port 5000
+    app.run(host='0.0.0.0', port=5000, debug=True)
