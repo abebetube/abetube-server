@@ -1,22 +1,17 @@
-# בסיס מ־Node
 FROM node:18
 
-# התקן yt-dlp
+# התקן yt-dlp מהמקור הרשמי
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip && \
-    pip3 install yt-dlp && \
-    ln -s /usr/local/bin/yt-dlp /usr/bin/yt-dlp
+    apt-get install -y curl python3 && \
+    curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/bin/yt-dlp && \
+    chmod a+rx /usr/bin/yt-dlp
 
-# צור תיקייה לאפליקציה
 WORKDIR /app
 
-# העתק קבצים
 COPY package*.json ./
 RUN npm install
 COPY . .
 
-# הגדר פורט
 EXPOSE 3000
 
-# פקודת הרצה
 CMD ["npm", "start"]
