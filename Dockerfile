@@ -4,7 +4,8 @@ FROM node:18
 # התקן yt-dlp
 RUN apt-get update && \
     apt-get install -y python3 python3-pip && \
-    pip3 install yt-dlp
+    pip3 install yt-dlp && \
+    ln -s /usr/local/bin/yt-dlp /usr/bin/yt-dlp
 
 # צור תיקייה לאפליקציה
 WORKDIR /app
