@@ -1,11 +1,12 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const { exec } = require('child_process');
+const path = require('path');
 
 const app = express();
 app.use(cors());
-const path = require('path');
+
+// שירת קבצים סטטיים מתיקיית public
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/getVideo', (req, res) => {
