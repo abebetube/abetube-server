@@ -16,47 +16,46 @@
   <video id="videoPlayer" controls></video>
 
   <script>
-    async function loadVideo() {
-      const videoId = document.getElementById('videoIdInput').value.trim();
-      if (!videoId) return alert('אנא הכנס מזהה סרטון');
+  async function loadVideo() {
+    const videoId = document.getElementById('videoIdInput').value.trim();
+    if (!videoId) return alert('אנא הכנס מזהה סרטון');
 
-      // מיקום לדוגמה (לבדיקה בלבד) – בגרסה אמיתית תצטרך שרת צד עם youtube-dl או API אחר
-     try {
-  const res = await fetch(`https://abetube-server.onrender.com/getVideo?id=${videoId}`);
-  const data = await res.json();
-  const videoUrl = data.url;
+    const player = document.getElementById('videoPlayer');
 
-  const player = document.getElementById('videoPlayer');
-  player.src = videoUrl;
-  player.currentTime = 0;
-  player.play();
-} catch (e) {
-  alert('שגיאה בטעינת הסרטון מהשרת');
-  console.error(e);
-}
+    try {
+      // שלח בקשה לשרת כדי לקבל את הלינק הישיר לסרטון
+      const response = await fetch(`https://abetube-server.onrender.com/getVideo?id=${videoId}`);
+      const data = await response.json();
 
+      if (!data.url) throw new Error("לא התקבל קישור וידאו");
 
-      // טען מקטעי SponsorBlock
-      try {
-        const res = await fetch(`https://sponsor.ajay.app/api/skipSegments?videoID=${videoId}`);
-        const data = await res.json();
-        const skipSegments = data.flatMap(d => d.segments);
+      player.src = data.url;
+      player.currentTime = 0;
+      player.play();
 
-        player.addEventListener('timeupdate', () => {
-          const now = player.currentTime;
-          for (const [start, end] of skipSegments) {
-            if (now >= start && now < end) {
-              console.log(`דילוג מ-${start} ל-${end}`);
-              player.currentTime = end;
-              break;
-            }
+      // טען פרקי SponsorBlock (דילוג פרסומות)
+      const res = await fetch(`https://sponsor.ajay.app/api/skipSegments?videoID=${videoId}`);
+      const sponsorData = await res.json();
+      const skipSegments = sponsorData.flatMap(d => d.segments);
+
+      player.addEventListener('timeupdate', () => {
+        const now = player.currentTime;
+        for (const [start, end] of skipSegments) {
+          if (now >= start && now < end) {
+            console.log(`דילוג מ-${start} ל-${end}`);
+            player.currentTime = end;
+            break;
           }
-        });
-      } catch (e) {
-        console.warn('לא נמצאו פרסומות או שגיאה ב-SponsorBlock', e);
-      }
+        }
+      });
+
+    } catch (e) {
+      console.error('שגיאה בטעינת הווידאו:', e);
+      alert('אירעה שגיאה בטעינת הווידאו. ודא שהמזהה תקין.');
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
 
