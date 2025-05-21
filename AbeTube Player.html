@@ -21,12 +21,20 @@
       if (!videoId) return alert('אנא הכנס מזהה סרטון');
 
       // מיקום לדוגמה (לבדיקה בלבד) – בגרסה אמיתית תצטרך שרת צד עם youtube-dl או API אחר
-      const dummyVideoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+     try {
+  const res = await fetch(`https://abetube-server.onrender.com/getVideo?id=${videoId}`);
+  const data = await res.json();
+  const videoUrl = data.url;
 
-      const player = document.getElementById('videoPlayer');
-      player.src = dummyVideoUrl;
-      player.currentTime = 0;
-      player.play();
+  const player = document.getElementById('videoPlayer');
+  player.src = videoUrl;
+  player.currentTime = 0;
+  player.play();
+} catch (e) {
+  alert('שגיאה בטעינת הסרטון מהשרת');
+  console.error(e);
+}
+
 
       // טען מקטעי SponsorBlock
       try {
