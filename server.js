@@ -5,6 +5,8 @@ const { exec } = require('child_process');
 
 const app = express();
 app.use(cors());
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/getVideo', (req, res) => {
   const videoId = req.query.id;
