@@ -1,41 +1,64 @@
 const express = require('express');
 const cors = require('cors');
-const { exec } = require('child_process');
-const path = require('path');
+const YTDlpWrap = require('yt-dlp-wrap');
 
 const app = express();
+const port = process.env.PORT || 3000;
+
+const ytDlpWrap = new YTDlpWrap();
+
 app.use(cors());
+app.use(express.json());
 
-// שירת קבצים סטטיים מתיקיית public
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/getVideo', (req, res) => {
-  const videoId = req.query.id;
-  if (!videoId) return res.status(400).json({ error: 'Missing video ID' });
-
-  const cmd = `yt-dlp -g -f 'best[ext=mp4]' https://www.youtube.com/watch?v=${videoId}`;
-
-  exec(cmd, (err, stdout, stderr) => {
-    if (err) {
-      console.error(stderr);
-      return res.status(500).json({ error: 'Failed to fetch video URL' });
-    }
-
-    const url = stdout.trim();
-    res.json({ url });
-  });
+app.get('/', (req, res) => {
+  res.send('AbeTube Server is running');
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.post('/get-video-url', async (req, res) => {
+  const videoUrl = req.body.url;
 
-
-exec('which yt-dlp', (error, stdout, stderr) => {
-  if (error) {
-    console.error('yt-dlp not found:', stderr);
-  } else {
-    console.log('yt-dlp path:', stdout);
+  if (!videoUrl) {
+    return res.status(400).json({ error: 'Missing video URL' });
   }
+
+  try {
+    let jsonOutput = '';
+
+    const process = ytDlpWrap.exec([
+      '-j',
+      videoUrl
+    ]);
+
+    process.stdout.on('data', (data) => {
+      jsonOutput += data.toString();
+    });
+
+    process.stderr.on('data', (data) => {
+      console.error('stderr:', data.toString());
+    });
+
+    process.on('close', () => {
+      try {
+        const videoInfo = JSON.parse(jsonOutput);
+        const bestFormat = videoInfo.formats?.find(f => f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none');
+
+        if (bestFormat?.url) {
+          res.json({ url: bestFormat.url });
+        } else {
+          res.status(500).json({ error: 'Failed to extract video URL' });
+        }
+      } catch (err) {
+        console.error('JSON parse error:', err);
+        res.status(500).json({ error: 'Failed to parse video info' });
+      }
+    });
+
+  } catch (error) {
+    console.error('Error running yt-dlp:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
