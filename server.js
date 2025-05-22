@@ -30,3 +30,13 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+const { exec } = require('child_process');
+
+exec('which yt-dlp', (error, stdout, stderr) => {
+  if (error) {
+    console.error('yt-dlp not found:', stderr);
+  } else {
+    console.log('yt-dlp path:', stdout);
+  }
+});
