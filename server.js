@@ -1,69 +1,48 @@
 import express from 'express';
-import cors from 'cors';
-import { YtDlpWrap } from 'yt-dlp-wrap';
-import fs from 'fs';
+import { YtdlpWrap } from 'yt-dlp-wrap';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
-// קביעת נתיב לתיקיית הפרויקט
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// CORS לאפליקציית ה-Frontend
-app.use(cors());
-
-const ytDlpWrap = new YtDlpWrap();
-const downloadsFolder = path.join(__dirname, 'downloads');
-
-// יצירת התיקייה אם לא קיימת
-if (!fs.existsSync(downloadsFolder)) {
-  fs.mkdirSync(downloadsFolder);
-}
-
-app.get('/', (req, res) => {
-  res.send('AbeTube Server is running!');
-});
+const ytdlpWrap = new YtdlpWrap();
 
 app.get('/download', async (req, res) => {
-  const videoUrl = req.query.url;
-  if (!videoUrl) {
-    return res.status(400).json({ error: 'Missing video URL' });
+  const { url } = req.query;
+
+  if (!url) {
+    return res.status(400).send('Missing URL');
   }
 
-  const outputFile = path.join(downloadsFolder, `video-${Date.now()}.mp4`);
-
-  const ytdlpEventEmitter = ytDlpWrap
-    .exec([
-      videoUrl,
+  const outputFilePath = path.join(__dirname, 'output.mp4');
+  try {
+    const subprocess = ytdlpWrap.exec([
+      url,
       '-f',
-      'mp4',
+      'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
       '-o',
-      outputFile
-    ])
-    .on('progress', progress => {
-      console.log('Download progress:', progress.percent);
-    });
+      outputFilePath
+    ]);
 
-  ytdlpEventEmitter.on('close', () => {
-    res.download(outputFile, err => {
-      if (err) {
-        console.error('Download failed:', err);
-        res.status(500).send('Download error');
+    subprocess.once('close', (code) => {
+      if (code === 0 && fs.existsSync(outputFilePath)) {
+        res.download(outputFilePath, 'video.mp4', (err) => {
+          fs.unlinkSync(outputFilePath);
+        });
+      } else {
+        res.status(500).send('Download failed');
       }
-      // מחיקת הקובץ לאחר שליחה
-      fs.unlink(outputFile, () => {});
     });
-  });
-
-  ytdlpEventEmitter.on('error', err => {
-    console.error('Error:', err);
-    res.status(500).send('yt-dlp error');
-  });
+  } catch (err) {
+    res.status(500).send('Error: ' + err.message);
+  }
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
