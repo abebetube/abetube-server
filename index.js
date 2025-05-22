@@ -8,7 +8,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // הפניית כל הבקשות לקובץ ה-HTML הראשי
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'AbeTube Player.html'));
+  res.sendFile(path.join(__dirname, 'public', 'AbeTube.html'));
 });
 
 app.listen(port, () => {
