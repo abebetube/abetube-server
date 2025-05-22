@@ -1,50 +1,20 @@
-import express from 'express';
-import pkg from 'yt-dlp-wrap';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+/* פרויקט: שרת AbeTube תיאור: שרת API פשוט שמחזיר קישור ישיר לוידאו מיוטיוב בעזרת yt-dlp. */
 
-const { YtdlpWrap } = pkg;
+import express from 'express'; import { YtDlpWrap } from 'yt-dlp-wrap'; import { exec } from 'child_process'; import fs from 'fs'; import path from 'path'; import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url); const __dirname = path.dirname(__filename);
 
-const app = express();
-const port = process.env.PORT || 3000;
+const app = express(); const port = process.env.PORT || 3000;
 
-const ytdlpWrap = new YtdlpWrap();
+app.use(express.json());
 
-app.get('/download', async (req, res) => {
-  const { url } = req.query;
+const ytDlpWrap = new YtDlpWrap();
 
-  if (!url) {
-    return res.status(400).send('Missing URL');
-  }
+app.get('/', (req, res) => { res.send('ברוך הבא לשרת AbeTube!'); });
 
-  const outputFilePath = path.join(__dirname, 'output.mp4');
-  try {
-    const subprocess = ytdlpWrap.exec([
-      url,
-      '-f',
-      'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
-      '-o',
-      outputFilePath
-    ]);
+// קבלת URL של סרטון והחזרת הקישור הישיר app.get('/api/get', async (req, res) => { const videoUrl = req.query.url; if (!videoUrl) { return res.status(400).json({ error: 'חסר פרמטר url' }); }
 
-    subprocess.once('close', (code) => {
-      if (code === 0 && fs.existsSync(outputFilePath)) {
-        res.download(outputFilePath, 'video.mp4', (err) => {
-          fs.unlinkSync(outputFilePath);
-        });
-      } else {
-        res.status(500).send('Download failed');
-      }
-    });
-  } catch (err) {
-    res.status(500).send('Error: ' + err.message);
-  }
-});
+try { const output = await ytDlpWrap.execPromise([ videoUrl, '-f', 'best[ext=mp4]', '-g' ]); res.json({ url: output.trim() }); } catch (err) { res.status(500).json({ error: 'שגיאה בעיבוד הוידאו', details: err.message }); } });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+app.listen(port, () => { console.log(השרת רץ על http://localhost:${port}); });
+
