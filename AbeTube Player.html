@@ -1,61 +1,13 @@
+<!-- public/AbeTube Player.html -->
 <!DOCTYPE html>
-<html lang="he">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AbeTube Player עם SponsorBlock</title>
-  <style>
-    body { font-family: sans-serif; background: #111; color: white; text-align: center; padding: 2em; }
-    video { width: 90%; max-width: 800px; margin: 1em auto; display: block; }
-    input, button { font-size: 1em; padding: 0.5em; margin: 0.5em; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AbeTube Player</title>
 </head>
 <body>
-  <h1>AbeTube Player עם דילוג פרסומות</h1>
-  <input id="videoIdInput" placeholder="הכנס Video ID של YouTube (למשל dQw4w9WgXcQ)">
-  <button onclick="loadVideo()">טען וידאו</button>
-  <video id="videoPlayer" controls></video>
-
-  <script>
-    async function loadVideo() {
-      const videoId = document.getElementById('videoIdInput').value.trim();
-      if (!videoId) return alert('אנא הכנס מזהה סרטון');
-
-      // מיקום לדוגמה (לבדיקה בלבד) – בגרסה אמיתית תצטרך שרת צד עם youtube-dl או API אחר
-     try {
-  const res = await fetch(`https://abetube-server.onrender.com/getVideo?id=${videoId}`);
-  const data = await res.json();
-  const videoUrl = data.url;
-
-  const player = document.getElementById('videoPlayer');
-  player.src = videoUrl;
-  player.currentTime = 0;
-  player.play();
-} catch (e) {
-  alert('שגיאה בטעינת הסרטון מהשרת');
-  console.error(e);
-}
-
-
-      // טען מקטעי SponsorBlock
-      try {
-        const res = await fetch(`https://sponsor.ajay.app/api/skipSegments?videoID=${videoId}`);
-        const data = await res.json();
-        const skipSegments = data.flatMap(d => d.segments);
-
-        player.addEventListener('timeupdate', () => {
-          const now = player.currentTime;
-          for (const [start, end] of skipSegments) {
-            if (now >= start && now < end) {
-              console.log(`דילוג מ-${start} ל-${end}`);
-              player.currentTime = end;
-              break;
-            }
-          }
-        });
-      } catch (e) {
-        console.warn('לא נמצאו פרסומות או שגיאה ב-SponsorBlock', e);
-      }
-    }
-  </script>
+  <h1>ברוך הבא ל-AbeTube</h1>
+  <p>כאן תוכל לחפש סרטונים ולנגן אותם</p>
 </body>
 </html>
