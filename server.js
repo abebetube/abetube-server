@@ -1,48 +1,31 @@
-/*
-  פרויקט: שרת AbeTube
-  תיאור: שרת API פשוט שמחזיר קישור ישיר לוידאו מיוטיוב בעזרת yt-dlp.
-*/
-
-import express from 'express';
-import { YtDlpWrap } from 'yt-dlp-wrap';
-import { exec } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// index.js או server.js
+const express = require('express');
+const cors = require('cors');
+const ytdl = require('ytdl-core');
 
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(cors());
 
-app.use(express.json());
-
-const ytDlpWrap = new YtDlpWrap();
-
-app.get('/', (req, res) => {
-  res.send('ברוך הבא לשרת AbeTube!');
-});
-
-// קבלת URL של סרטון והחזרת הקישור הישיר
-app.get('/api/get', async (req, res) => {
-  const videoUrl = req.query.url;
-  if (!videoUrl) {
-    return res.status(400).json({ error: 'חסר פרמטר url' });
+app.get('/getVideo', async (req, res) => {
+  const videoId = req.query.id;
+  if (!videoId) {
+    return res.status(400).json({ error: 'Missing video ID' });
   }
 
   try {
-    const output = await ytDlpWrap.execPromise([
-      videoUrl,
-      '-f', 'best[ext=mp4]',
-      '-g'
-    ]);
-    res.json({ url: output.trim() });
+    const info = await ytdl.getInfo(videoId);
+    const format = ytdl.chooseFormat(info.formats, { quality: '18' }); // mp4 360p
+    if (!format || !format.url) {
+      return res.status(500).json({ error: 'Video format not found' });
+    }
+    res.json({ url: format.url });
   } catch (err) {
-    res.status(500).json({ error: 'שגיאה בעיבוד הוידאו', details: err.message });
+    console.error('Error fetching video:', err);
+    res.status(500).json({ error: 'Failed to get video link' });
   }
 });
 
-app.listen(port, () => {
-  console.log(`השרת רץ על http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
