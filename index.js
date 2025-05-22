@@ -1,12 +1,16 @@
 const express = require('express');
+const path = require('path');
 const app = express();
+const port = process.env.PORT || 3000;
 
-const PORT = process.env.PORT || 3000;
+// הגדרת תיקיית הקבצים הסטטיים
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', (req, res) => {
-  res.send('AbeTube server is running!');
+// הפניית כל הבקשות לקובץ ה-HTML הראשי
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'AbeTube Player.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
