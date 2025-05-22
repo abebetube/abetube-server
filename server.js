@@ -31,7 +31,6 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-const { exec } = require('child_process');
 
 exec('which yt-dlp', (error, stdout, stderr) => {
   if (error) {
