@@ -1,64 +1,45 @@
 const express = require('express');
 const cors = require('cors');
-const YTDlpWrap = require('yt-dlp-wrap');
+const { YtDlpWrap } = require('yt-dlp-wrap');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-const ytDlpWrap = new YTDlpWrap();
+const port = 3000;
 
 app.use(cors());
-app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send('AbeTube Server is running');
-});
+const ytDlpWrap = new YtDlpWrap();
 
-app.post('/get-video-url', async (req, res) => {
-  const videoUrl = req.body.url;
-
+// הורדה לקובץ מקומי (או סטרימינג)
+app.get('/download', async (req, res) => {
+  const videoUrl = req.query.url;
   if (!videoUrl) {
-    return res.status(400).json({ error: 'Missing video URL' });
+    return res.status(400).json({ error: 'Missing URL parameter' });
   }
 
   try {
-    let jsonOutput = '';
+    // יוצרים שם זמני
+    const fileName = `video_${Date.now()}.mp4`;
+    const filePath = path.join(__dirname, fileName);
+    const writeStream = fs.createWriteStream(filePath);
 
-    const process = ytDlpWrap.exec([
-      '-j',
-      videoUrl
-    ]);
+    ytDlpWrap.execStream([
+      videoUrl,
+      '-f', 'best[ext=mp4]/best',
+      '-o', filePath
+    ]).stdout.pipe(writeStream);
 
-    process.stdout.on('data', (data) => {
-      jsonOutput += data.toString();
+    writeStream.on('finish', () => {
+      res.download(filePath, 'video.mp4', (err) => {
+        fs.unlink(filePath, () => {}); // מוחק את הקובץ אחרי השליחה
+      });
     });
-
-    process.stderr.on('data', (data) => {
-      console.error('stderr:', data.toString());
-    });
-
-    process.on('close', () => {
-      try {
-        const videoInfo = JSON.parse(jsonOutput);
-        const bestFormat = videoInfo.formats?.find(f => f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none');
-
-        if (bestFormat?.url) {
-          res.json({ url: bestFormat.url });
-        } else {
-          res.status(500).json({ error: 'Failed to extract video URL' });
-        }
-      } catch (err) {
-        console.error('JSON parse error:', err);
-        res.status(500).json({ error: 'Failed to parse video info' });
-      }
-    });
-
-  } catch (error) {
-    console.error('Error running yt-dlp:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (err) {
+    res.status(500).json({ error: 'Download failed', details: err.message });
   }
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`AbeTube server running at http://localhost:${port}`);
 });
